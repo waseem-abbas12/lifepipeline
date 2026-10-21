@@ -10,28 +10,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#f0fdf4",
-          100: "#dcfce7",
-          500: "#22c55e",
-          600: "#16a34a",
-          700: "#15803d",
-          900: "#14532d",
+        indigo: {
+          50: "#EEF2FF",
+          100: "#E0E7FF",
+          200: "#C7D2FE",
+          500: "#6366F1",
+          600: "#4F46E5", // Electric Indigo primary accent
+          700: "#4338CA",
+          800: "#3730A3",
+          900: "#312E81",
         },
         surface: {
-          dark: "#0b0f19",
-          card: "#111827",
-          border: "#1f2937",
-          muted: "#9ca3af",
+          base: "#0B0F19",       // Deep Midnight Charcoal Base
+          card: "#111827",       // Charcoal Card Surface
+          elevated: "#1F2937",   // Elevated surface
+          border: "#1F2937",     // Subtle border
+          silver: "#F3F4F6",     // Clean White / Soft Silver Gray
+          muted: "#9CA3AF",      // Muted silver text
         },
         traffic: {
-          green: "#10b981",
-          yellow: "#f59e0b",
-          red: "#ef4444",
+          green: "#10B981",
+          yellow: "#F59E0B",
+          red: "#EF4444",
         }
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },

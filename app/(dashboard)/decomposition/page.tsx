@@ -1,660 +1,567 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Zap, 
-  Target, 
-  CheckCircle2, 
-  Circle, 
-  Clock, 
-  Plus, 
-  Trash2, 
-  Flame, 
   Sparkles, 
-  AlertCircle,
+  Target, 
+  Lock, 
+  ArrowRight, 
+  Check, 
+  Trash2, 
+  Clock, 
+  Zap, 
+  BrainCircuit, 
+  ChevronRight,
   Filter,
-  ArrowRight,
-  TrendingUp,
-  Brain,
-  ShieldCheck,
-  Check
+  CheckCircle2,
+  Plus,
+  RefreshCw,
+  Lightbulb
 } from 'lucide-react';
-import { 
-  ParetoLeverageAction, 
-  MicroTask, 
-  LeverageTier, 
-  EnergyRequirement 
-} from '@/types';
+import { TimeLockCommitment, BlueprintGoal } from '@/types';
 
-export default function DecompositionPage() {
-  // Goal Context
-  const [selectedTarget, setSelectedTarget] = useState({
-    title: 'Close 15 Enterprise SaaS Contracts & Automate Onboarding',
-    timeframe: 'Active 3-Month Time-Lock',
-    why: 'Locks in predictable financial runway and stops endless product feature tinkering.',
+// Structured item parsed from user brain dump
+interface DecomposedItem {
+  id: string;
+  originalText: string;
+  refinedTitle: string;
+  leverageScore: number; // 0 - 100
+  isVital20: boolean;    // true = Vital 20% | false = 80% Noise/Maintenance
+  category: string;
+  estimatedMinutes: number;
+}
+
+interface DailyMicroTask {
+  id: string;
+  decomposedItemId: string;
+  title: string;
+  durationMinutes: 15 | 30 | 45;
+  completed: boolean;
+  scheduledTime?: string;
+}
+
+export default function ParetoDecompositionEngine() {
+  // Phase 1 Integration: Active Time-Lock Commitment or 1-Yr Goal Context
+  const [activeTarget, setActiveTarget] = useState({
+    title: 'Scale SaaS Platform to $1.2M ARR with Autonomous Operations',
+    timeframe: 'Active 3-Month Time-Lock Commitment',
+    psychologicalStake: 'Failure means getting stuck trading hours for dollars. Achieving this provides absolute family autonomy.',
   });
 
-  // Pareto 20/80 Actions
-  const [paretoActions, setParetoActions] = useState<ParetoLeverageAction[]>([
+  // State: Scattered Thoughts Input (Brain Dump)
+  const [scatteredInput, setScatteredInput] = useState(
+    'Need to fix onboarding drop-off\nRedo team Slack channels\nRecord 5 personalized cold Loom demos for enterprise leads\nClean up old Notion notes\nShip Stripe automated billing webhook\nReply to routine customer emails\nUpdate social media header graphic\nInterview high-ticket sales closer candidate'
+  );
+
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // State: Pareto 20/80 Processed Items
+  const [items, setItems] = useState<DecomposedItem[]>([
     {
-      id: 'pa-1',
-      user_id: 'u-1',
-      title: 'Conduct 5 Targeted Cold Loom Demos Daily to ICP Decision Makers',
-      impact_rationale: 'Direct pipeline driver: Outbound video outreach converts at 24% vs generic emails at 1.5%.',
-      leverage_tier: 'vital_20',
-      estimated_weekly_hours: 6.0,
+      id: 'item-1',
+      originalText: 'Record 5 personalized cold Loom demos for enterprise leads',
+      refinedTitle: 'Record 5 Personalized Cold Loom Demos for Enterprise Leads',
+      leverageScore: 94,
+      isVital20: true,
+      category: 'Pipeline & Revenue',
+      estimatedMinutes: 45,
     },
     {
-      id: 'pa-2',
-      user_id: 'u-1',
-      title: 'Build Frictionless Stripe Self-Serve & Automated Workspace Provisioning',
-      impact_rationale: 'Removes manual founder bottleneck so deals close and onboard in under 4 minutes without calls.',
-      leverage_tier: 'vital_20',
-      estimated_weekly_hours: 8.0,
+      id: 'item-2',
+      originalText: 'Ship Stripe automated billing webhook',
+      refinedTitle: 'Ship Stripe Automated Billing Webhook & Subscription Listener',
+      leverageScore: 89,
+      isVital20: true,
+      category: 'Infrastructure',
+      estimatedMinutes: 45,
     },
     {
-      id: 'pa-3',
-      user_id: 'u-1',
-      title: 'Reorganize internal Notion documentation and team Slack channels',
-      impact_rationale: 'Necessary maintenance, but does not directly generate revenue or move the needle.',
-      leverage_tier: 'maintenance_80',
-      estimated_weekly_hours: 2.0,
+      id: 'item-3',
+      originalText: 'Interview high-ticket sales closer candidate',
+      refinedTitle: 'Interview High-Ticket Sales Closer Candidate',
+      leverageScore: 82,
+      isVital20: true,
+      category: 'Leverage & Team',
+      estimatedMinutes: 30,
+    },
+    {
+      id: 'item-4',
+      originalText: 'Redo team Slack channels',
+      refinedTitle: 'Reorganize internal team Slack channels',
+      leverageScore: 28,
+      isVital20: false,
+      category: 'Routine Admin',
+      estimatedMinutes: 15,
+    },
+    {
+      id: 'item-5',
+      originalText: 'Clean up old Notion notes',
+      refinedTitle: 'Archive outdated workspace Notion pages',
+      leverageScore: 22,
+      isVital20: false,
+      category: 'Routine Admin',
+      estimatedMinutes: 15,
+    },
+    {
+      id: 'item-6',
+      originalText: 'Update social media header graphic',
+      refinedTitle: 'Design and upload new social media banner',
+      leverageScore: 19,
+      isVital20: false,
+      category: 'Low-Impact Cosmetics',
+      estimatedMinutes: 30,
     },
   ]);
 
-  // Micro-Tasks
-  const [microTasks, setMicroTasks] = useState<MicroTask[]>([
+  // State: Daily Actionable Micro-Tasks
+  const [microTasks, setMicroTasks] = useState<DailyMicroTask[]>([
     {
       id: 'mt-1',
-      user_id: 'u-1',
-      pareto_action_id: 'pa-1',
-      title: 'Prospect 5 B2B SaaS Founders on LinkedIn & record 90-sec personalized Looms',
-      duration_minutes: 45,
-      energy_state: 'deep_focus',
-      leverage_tier: 'vital_20',
+      decomposedItemId: 'item-1',
+      title: 'Target 5 B2B Founders on LinkedIn and record 90-sec Loom videos',
+      durationMinutes: 45,
       completed: true,
-      scheduled_date: new Date().toISOString().split('T')[0],
-      completed_at: new Date().toISOString(),
     },
     {
       id: 'mt-2',
-      user_id: 'u-1',
-      pareto_action_id: 'pa-1',
-      title: 'Send follow-up sequence with custom audit checklist to 3 warm leads',
-      duration_minutes: 15,
-      energy_state: 'quick_execution',
-      leverage_tier: 'vital_20',
+      decomposedItemId: 'item-1',
+      title: 'Send follow-up Loom links with 1-click booking link',
+      durationMinutes: 15,
       completed: false,
-      scheduled_date: new Date().toISOString().split('T')[0],
     },
     {
       id: 'mt-3',
-      user_id: 'u-1',
-      pareto_action_id: 'pa-2',
-      title: 'Implement Webhook listener for Stripe checkout.session.completed in API',
-      duration_minutes: 60,
-      energy_state: 'deep_focus',
-      leverage_tier: 'vital_20',
+      decomposedItemId: 'item-2',
+      title: 'Write Stripe webhook handler for checkout.session.completed',
+      durationMinutes: 45,
       completed: false,
-      scheduled_date: new Date().toISOString().split('T')[0],
     },
     {
       id: 'mt-4',
-      user_id: 'u-1',
-      pareto_action_id: 'pa-3',
-      title: 'Clear out inbox clutter and archive resolved customer support tickets',
-      duration_minutes: 15,
-      energy_state: 'routine',
-      leverage_tier: 'maintenance_80',
-      completed: true,
-      scheduled_date: new Date().toISOString().split('T')[0],
-      completed_at: new Date().toISOString(),
+      decomposedItemId: 'item-3',
+      title: 'Conduct 30-min candidate interview & scoring assessment',
+      durationMinutes: 30,
+      completed: false,
     },
   ]);
 
-  // Modals state
-  const [showAddActionModal, setShowAddActionModal] = useState(false);
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [filterState, setFilterState] = useState<'all' | 'vital_20' | 'maintenance_80'>('all');
+  // Load Time-Lock commitment from localStorage if available (Phase 1 Integration)
+  useEffect(() => {
+    try {
+      const savedLock = localStorage.getItem('lifepipeline_active_timelock');
+      if (savedLock) {
+        const parsed = JSON.parse(savedLock);
+        if (parsed.focus_title) {
+          setActiveTarget({
+            title: parsed.focus_title,
+            timeframe: `${parsed.duration_months || 3}-Month Time-Locked Focus`,
+            psychologicalStake: parsed.why_this_matters || activeTarget.psychologicalStake,
+          });
+        }
+      }
+    } catch (e) {
+      // Graceful fallback
+    }
+  }, []);
 
-  // Form: New Pareto Action
-  const [newActionTitle, setNewActionTitle] = useState('');
-  const [newActionWhy, setNewActionWhy] = useState('');
-  const [newActionTier, setNewActionTier] = useState<LeverageTier>('vital_20');
-  const [newActionHours, setNewActionHours] = useState('5.0');
+  // Pareto 80/20 Processing Algorithm
+  const handleProcessBrainDump = () => {
+    if (!scatteredInput.trim()) return;
+    setIsProcessing(true);
 
-  // Form: New Micro-Task
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDuration, setNewTaskDuration] = useState<15 | 30 | 45 | 60>(30);
-  const [newTaskEnergy, setNewTaskEnergy] = useState<EnergyRequirement>('deep_focus');
-  const [newTaskParentAction, setNewTaskParentAction] = useState(paretoActions[0]?.id || '');
+    setTimeout(() => {
+      const lines = scatteredInput
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
 
-  // Toggle Micro-Task Completion
-  const toggleTask = (taskId: string) => {
+      // High leverage keywords indicating 80% outcome drivers
+      const highLeverageRegex = /(sales|revenue|demo|client|contract|customer|stripe|billing|hire|closer|launch|lead|convert|ship|outreach)/i;
+
+      const analyzed: DecomposedItem[] = lines.map((line, idx) => {
+        const isHigh = highLeverageRegex.test(line);
+        const score = isHigh ? Math.floor(75 + Math.random() * 24) : Math.floor(15 + Math.random() * 35);
+        return {
+          id: `item-${Date.now()}-${idx}`,
+          originalText: line,
+          refinedTitle: line.charAt(0).toUpperCase() + line.slice(1),
+          leverageScore: score,
+          isVital20: score >= 70,
+          category: isHigh ? 'High-Leverage Needle' : 'Maintenance / Routine',
+          estimatedMinutes: isHigh ? 45 : 15,
+        };
+      });
+
+      analyzed.sort((a, b) => b.leverageScore - a.leverageScore);
+      setItems(analyzed);
+
+      // Auto-generate micro-tasks from the Vital 20% items
+      const vitals = analyzed.filter(i => i.isVital20);
+      const generatedTasks: DailyMicroTask[] = vitals.flatMap((v) => [
+        {
+          id: `mt-${Date.now()}-${v.id}-1`,
+          decomposedItemId: v.id,
+          title: `Focus Sprint: ${v.refinedTitle}`,
+          durationMinutes: (v.estimatedMinutes <= 30 ? 30 : 45) as 15 | 30 | 45,
+          completed: false,
+        },
+      ]);
+
+      if (generatedTasks.length > 0) {
+        setMicroTasks(generatedTasks);
+      }
+
+      setIsProcessing(false);
+    }, 400);
+  };
+
+  const toggleTask = (id: string) => {
     setMicroTasks(prev =>
-      prev.map(t =>
-        t.id === taskId
+      prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
+    );
+  };
+
+  const toggleItemLeverage = (id: string) => {
+    setItems(prev =>
+      prev.map(item =>
+        item.id === id
           ? {
-              ...t,
-              completed: !t.completed,
-              completed_at: !t.completed ? new Date().toISOString() : null,
+              ...item,
+              isVital20: !item.isVital20,
+              leverageScore: !item.isVital20 ? 80 : 30,
             }
-          : t
+          : item
       )
     );
   };
 
-  const handleAddAction = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newActionTitle) return;
-
-    const action: ParetoLeverageAction = {
-      id: 'pa-' + Date.now(),
-      user_id: 'u-1',
-      title: newActionTitle,
-      impact_rationale: newActionWhy,
-      leverage_tier: newActionTier,
-      estimated_weekly_hours: parseFloat(newActionHours) || 4.0,
-    };
-
-    setParetoActions([...paretoActions, action]);
-    setNewActionTitle('');
-    setNewActionWhy('');
-    setShowAddActionModal(false);
-  };
-
-  const handleAddMicroTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle || !newTaskParentAction) return;
-
-    const parent = paretoActions.find(a => a.id === newTaskParentAction);
-
-    const task: MicroTask = {
-      id: 'mt-' + Date.now(),
-      user_id: 'u-1',
-      pareto_action_id: newTaskParentAction,
-      title: newTaskTitle,
-      duration_minutes: newTaskDuration,
-      energy_state: newTaskEnergy,
-      leverage_tier: parent?.leverage_tier || 'vital_20',
+  const addMicroTaskForVital = (vitalItem: DecomposedItem) => {
+    const newTask: DailyMicroTask = {
+      id: `mt-${Date.now()}`,
+      decomposedItemId: vitalItem.id,
+      title: `Sub-task for: ${vitalItem.refinedTitle}`,
+      durationMinutes: 30,
       completed: false,
-      scheduled_date: new Date().toISOString().split('T')[0],
     };
-
-    setMicroTasks([...microTasks, task]);
-    setNewTaskTitle('');
-    setShowAddTaskModal(false);
+    setMicroTasks(prev => [newTask, ...prev]);
   };
 
-  // Metrics
-  const totalTasks = microTasks.length;
-  const completedTasks = microTasks.filter(t => t.completed).length;
-  const vital20Tasks = microTasks.filter(t => t.leverage_tier === 'vital_20');
-  const vital20Completed = vital20Tasks.filter(t => t.completed).length;
-  const paretoRatio = totalTasks > 0 ? Math.round((vital20Completed / (completedTasks || 1)) * 100) : 0;
-
-  const filteredTasks = microTasks.filter(task => {
-    if (filterState === 'vital_20') return task.leverage_tier === 'vital_20';
-    if (filterState === 'maintenance_80') return task.leverage_tier === 'maintenance_80';
-    return true;
-  });
+  const vitalItems = items.filter(i => i.isVital20);
+  const maintenanceItems = items.filter(i => !i.isVital20);
+  const completedTasksCount = microTasks.filter(t => t.completed).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* Target Focus Header */}
-      <div className="glass-panel-glow p-6 sm:p-7 rounded-2xl border border-brand-500/30 mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      {/* 1. Integration Header: Active Blueprint Time-Lock Context */}
+      <div className="clean-card rounded-2xl p-6 sm:p-7 border border-surface-border mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-surface-border">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5" />
-                Pareto Deconstruction Scope
+              <span className="px-2.5 py-0.5 rounded-lg bg-indigo-600/15 text-indigo-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 border border-indigo-600/30">
+                <Lock className="w-3.5 h-3.5" />
+                Phase 1 Blueprint Integration
               </span>
-              <span className="text-gray-500">•</span>
-              <span className="text-xs text-amber-400 font-semibold">{selectedTarget.timeframe}</span>
+              <span className="text-surface-muted text-xs">•</span>
+              <span className="text-xs text-surface-silver font-medium">
+                {activeTarget.timeframe}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {selectedTarget.title}
+            <h1 className="text-xl sm:text-2xl font-bold text-surface-silver tracking-tight">
+              {activeTarget.title}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-300 mt-1 italic">
-              "{selectedTarget.why}"
-            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowAddActionModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 hover:border-gray-500 text-white font-medium text-xs tracking-wide transition-all flex items-center gap-2"
-            >
-              <Zap className="w-4 h-4 text-brand-400" />
-              Define 80/20 Action
-            </button>
-            <button
-              onClick={() => setShowAddTaskModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-black font-bold text-xs tracking-wide transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Generate Micro-Task
-            </button>
+          <div className="shrink-0">
+            <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-base border border-surface-border text-xs text-surface-muted">
+              <Target className="w-4 h-4 text-indigo-400" />
+              <span>Target Alignment: <strong>Locked</strong></span>
+            </span>
           </div>
         </div>
 
-        {/* Psychological Ratio Bar */}
-        <div className="mt-6 pt-5 border-t border-gray-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800/80">
-            <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">
-              Vital 20% Execution Ratio
-            </div>
-            <div className="text-2xl font-black text-brand-400 mt-0.5">
-              {vital20Completed} / {vital20Tasks.length} <span className="text-xs font-normal text-gray-400">tasks done</span>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-1.5 mt-2">
-              <div 
-                className="bg-brand-500 h-1.5 rounded-full transition-all"
-                style={{ width: `${vital20Tasks.length > 0 ? (vital20Completed / vital20Tasks.length) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800/80">
-            <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">
-              Leverage Quality Score
-            </div>
-            <div className="text-2xl font-black text-emerald-400 mt-0.5">
-              {totalTasks > 0 ? Math.round((vital20Tasks.length / totalTasks) * 100) : 0}%
-            </div>
-            <p className="text-[11px] text-gray-500 mt-1">
-              Percentage of planned actions belonging to the vital 20% needle-movers.
-            </p>
-          </div>
-
-          <div className="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800/80">
-            <div className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">
-              Micro-Friction Index
-            </div>
-            <div className="text-2xl font-black text-teal-300 mt-0.5">
-              32.5 min
-            </div>
-            <p className="text-[11px] text-gray-500 mt-1">
-              Avg task chunk size. Sub-45 min tasks eliminate psychological hesitation.
-            </p>
-          </div>
-        </div>
+        <p className="text-xs sm:text-sm text-surface-muted italic mt-3">
+          <strong className="text-indigo-400 not-italic font-semibold uppercase tracking-wide text-[11px] mr-1.5">
+            Psychological Stake:
+          </strong>
+          "{activeTarget.psychologicalStake}"
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* LEFT COLUMN: 80/20 Leverage Levers (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-400" />
-              <h2 className="text-lg font-bold text-white tracking-tight">The 80/20 Leverage Levers</h2>
+        {/* LEFT COLUMN: Scattered Thoughts Brain Dump & Pareto Extraction (7 Cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Section 1: Scattered Thoughts Dump Input */}
+          <div className="clean-card rounded-2xl p-6 border border-surface-border">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BrainCircuit className="w-5 h-5 text-indigo-500" />
+                <h2 className="text-base font-bold text-surface-silver">
+                  1. Scattered Thoughts & Task Dump
+                </h2>
+              </div>
+              <span className="text-xs text-surface-muted">
+                One thought or task per line
+              </span>
             </div>
-            <span className="text-xs text-gray-400 font-mono">
-              {paretoActions.length} Drivers
-            </span>
+
+            <p className="text-xs text-surface-muted mb-3 leading-relaxed">
+              Dump every distraction, overwhelming to-do item, or scattered thought. The Pareto 80/20 algorithm will filter out the noise and isolate the few vital needle-movers.
+            </p>
+
+            <textarea
+              rows={6}
+              value={scatteredInput}
+              onChange={(e) => setScatteredInput(e.target.value)}
+              placeholder="e.g. Call lead back&#10;Fix homepage typo&#10;Launch customer outreach&#10;Organize files..."
+              className="w-full p-4 rounded-xl bg-surface-base border border-surface-border text-surface-silver text-sm focus:border-indigo-600 focus:outline-none transition-colors resize-none placeholder-surface-muted/60 leading-relaxed font-mono"
+            />
+
+            <div className="flex items-center justify-between gap-3 mt-4">
+              <span className="text-xs text-surface-muted font-mono">
+                {scatteredInput.split('\n').filter(l => l.trim()).length} raw items entered
+              </span>
+
+              <button
+                type="button"
+                onClick={handleProcessBrainDump}
+                disabled={isProcessing || !scatteredInput.trim()}
+                className="min-h-[48px] px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm tracking-wide transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Extracting 80/20...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Run 80/20 Pareto Extraction
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {paretoActions.map((action) => {
-              const isVital = action.leverage_tier === 'vital_20';
-              return (
+          {/* Section 2: Filtered Pareto 20/80 Outcomes */}
+          <div className="clean-card rounded-2xl p-6 border border-surface-border space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-surface-silver flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-indigo-500" />
+                  2. Pareto 80/20 Filtered Results
+                </h2>
+                <p className="text-xs text-surface-muted mt-0.5">
+                  High-leverage needle movers separated from routine busywork.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-lg bg-indigo-600/15 text-indigo-400 font-bold border border-indigo-600/30">
+                  {vitalItems.length} Vital 20%
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-surface-elevated text-surface-muted font-medium">
+                  {maintenanceItems.length} Routine 80%
+                </span>
+              </div>
+            </div>
+
+            {/* Vital 20% Levers Stack */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 block">
+                The Vital 20% (Yields 80% of Progress)
+              </span>
+
+              {vitalItems.map((item) => (
                 <div
-                  key={action.id}
-                  className={`p-4 rounded-xl border transition-all ${
-                    isVital
-                      ? 'bg-surface-card border-brand-500/40 shadow-sm'
-                      : 'bg-surface-card/40 border-gray-800 opacity-75'
-                  }`}
+                  key={item.id}
+                  className="clean-card-active rounded-xl p-4 transition-all"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
-                        isVital
-                          ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30'
-                          : 'bg-gray-800 text-gray-400 border border-gray-700'
-                      }`}
-                    >
-                      {isVital ? 'Vital 20% Lever' : 'Maintenance 80%'}
-                    </span>
-                    <span className="text-[11px] text-gray-500 font-medium">
-                      ~{action.estimated_weekly_hours} hrs/wk
-                    </span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold tracking-wide uppercase">
+                          Score {item.leverageScore}/100
+                        </span>
+                        <span className="text-xs text-surface-muted font-medium">
+                          {item.category}
+                        </span>
+                      </div>
+                      <p className="text-sm font-semibold text-surface-silver">
+                        {item.refinedTitle}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => addMicroTaskForVital(item)}
+                        className="min-h-[40px] px-3 py-1.5 rounded-lg bg-surface-base border border-surface-border hover:border-indigo-500 text-surface-silver text-xs font-medium transition-colors flex items-center gap-1.5"
+                        title="Create micro-task from this driver"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-indigo-400" />
+                        Micro-Task
+                      </button>
+                      <button
+                        onClick={() => toggleItemLeverage(item.id)}
+                        className="min-h-[40px] px-2.5 py-1.5 rounded-lg bg-surface-base border border-surface-border text-surface-muted hover:text-surface-silver text-xs"
+                        title="Demote to 80% Routine"
+                      >
+                        Demote
+                      </button>
+                    </div>
                   </div>
-
-                  <h3 className="text-sm font-bold text-white mb-1.5">{action.title}</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed italic bg-gray-900/60 p-2.5 rounded-lg border border-gray-800/80">
-                    <strong className="text-gray-300 not-italic">80% Impact Rationale: </strong>
-                    {action.impact_rationale}
-                  </p>
                 </div>
-              );
-            })}
+              ))}
 
-            <button
-              onClick={() => setShowAddActionModal(true)}
-              className="w-full py-3 rounded-xl border border-dashed border-gray-800 hover:border-brand-500/50 hover:bg-brand-500/5 text-xs text-gray-400 hover:text-white transition-all flex items-center justify-center gap-2"
-            >
-              <Plus className="w-3.5 h-3.5 text-brand-400" />
-              Isolate Another 80/20 Leverage Lever
-            </button>
+              {vitalItems.length === 0 && (
+                <div className="p-6 text-center rounded-xl bg-surface-base border border-surface-border text-surface-muted text-xs">
+                  No 20% high-leverage actions identified yet. Run extraction above.
+                </div>
+              )}
+            </div>
+
+            {/* Routine 80% Noise Stack */}
+            <div className="space-y-2 pt-2 border-t border-surface-border">
+              <span className="text-xs font-bold uppercase tracking-wider text-surface-muted block">
+                The 80% Maintenance & Noise (Defer or Delegate)
+              </span>
+
+              <div className="space-y-1.5">
+                {maintenanceItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-xl bg-surface-base/80 border border-surface-border/60 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2 text-surface-muted">
+                      <span className="w-2 h-2 rounded-full bg-surface-border" />
+                      <span className="line-clamp-1">{item.refinedTitle}</span>
+                    </div>
+
+                    <button
+                      onClick={() => toggleItemLeverage(item.id)}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium shrink-0 px-2 py-1 rounded bg-indigo-600/10 hover:bg-indigo-600/20 transition-colors"
+                    >
+                      Promote to 20%
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Daily Micro-Task Execution Deck (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-brand-400" />
-              <h2 className="text-lg font-bold text-white tracking-tight">Today's Micro-Task Execution Deck</h2>
+        {/* RIGHT COLUMN: Actionable Daily Micro-Task Deck (5 Cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="clean-card rounded-2xl p-6 border border-surface-border space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-surface-silver flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-indigo-500" />
+                  3. Daily Micro-Task Deck
+                </h2>
+                <p className="text-xs text-surface-muted mt-0.5">
+                  Friction-free, bite-sized tasks under 45 minutes.
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-base font-extrabold text-indigo-400">
+                  {completedTasksCount}/{microTasks.length}
+                </span>
+                <span className="block text-[10px] text-surface-muted uppercase font-semibold">
+                  Done Today
+                </span>
+              </div>
             </div>
 
-            {/* Filter buttons */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-gray-900 border border-gray-800 text-xs">
-              <button
-                onClick={() => setFilterState('all')}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  filterState === 'all' ? 'bg-brand-500 text-black font-bold' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                All ({microTasks.length})
-              </button>
-              <button
-                onClick={() => setFilterState('vital_20')}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  filterState === 'vital_20' ? 'bg-brand-500 text-black font-bold' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Vital 20% ({vital20Tasks.length})
-              </button>
-              <button
-                onClick={() => setFilterState('maintenance_80')}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  filterState === 'maintenance_80' ? 'bg-brand-500 text-black font-bold' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                80% Maintenance
-              </button>
+            {/* Progress bar */}
+            <div className="w-full bg-surface-base rounded-full h-2 overflow-hidden border border-surface-border">
+              <div
+                className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${microTasks.length > 0 ? (completedTasksCount / microTasks.length) * 100 : 0}%`,
+                }}
+              />
             </div>
-          </div>
 
-          <div className="space-y-2.5">
-            {filteredTasks.map((task) => {
-              const isVital = task.leverage_tier === 'vital_20';
-              const parentAction = paretoActions.find(a => a.id === task.pareto_action_id);
-
-              return (
-                <div
+            {/* Micro-Task List with Large Touch Targets (min-h-[56px]) */}
+            <div className="space-y-3">
+              {microTasks.map((task) => (
+                <button
                   key={task.id}
+                  type="button"
                   onClick={() => toggleTask(task.id)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3.5 group ${
+                  className={`w-full text-left min-h-[56px] p-4 rounded-xl border transition-all flex items-start gap-3.5 group clean-card-hover ${
                     task.completed
-                      ? 'bg-gray-900/40 border-gray-800/80 opacity-60'
-                      : isVital
-                      ? 'glass-panel border-gray-700/80 hover:border-brand-500/60'
-                      : 'bg-surface-card/60 border-gray-800 hover:border-gray-700'
+                      ? 'bg-surface-base/60 border-surface-border/50 opacity-60'
+                      : 'clean-card border-surface-border hover:border-indigo-600/60'
                   }`}
                 >
-                  <button
-                    type="button"
-                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                  <div
+                    className={`w-6 h-6 rounded-lg mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
                       task.completed
-                        ? 'bg-brand-500 text-black'
-                        : 'border border-gray-600 group-hover:border-brand-400'
+                        ? 'bg-indigo-600 text-white'
+                        : 'border-2 border-surface-muted/50 group-hover:border-indigo-500'
                     }`}
                   >
-                    {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </button>
+                    {task.completed && <Check className="w-4 h-4 stroke-[3]" />}
+                  </div>
 
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span
-                        className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded ${
-                          isVital
-                            ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30'
-                            : 'bg-gray-800 text-gray-400'
-                        }`}
-                      >
-                        {isVital ? 'Vital 20%' : '80% Routine'}
-                      </span>
-
-                      <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
-                        <Clock className="w-3 h-3 text-gray-500" />
-                        {task.duration_minutes}m chunk
-                      </span>
-
-                      <span className="text-[10px] text-teal-400/90 capitalize px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/20">
-                        {task.energy_state.replace('_', ' ')}
-                      </span>
-                    </div>
-
                     <p
-                      className={`text-sm font-medium ${
-                        task.completed ? 'line-through text-gray-500' : 'text-white'
+                      className={`text-sm font-medium leading-snug ${
+                        task.completed
+                          ? 'line-through text-surface-muted'
+                          : 'text-surface-silver'
                       }`}
                     >
                       {task.title}
                     </p>
 
-                    {parentAction && (
-                      <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1 truncate">
-                        <ArrowRight className="w-3 h-3 text-brand-500 shrink-0" />
-                        Driver: <span className="text-gray-400 truncate">{parentAction.title}</span>
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-surface-muted px-2 py-0.5 rounded bg-surface-base border border-surface-border">
+                        <Clock className="w-3 h-3 text-indigo-400" />
+                        {task.durationMinutes} min sprint
+                      </span>
+                      <span className="text-[11px] text-indigo-400 font-semibold">
+                        Vital 20%
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                </button>
+              ))}
 
-            {filteredTasks.length === 0 && (
-              <div className="p-8 text-center glass-panel rounded-2xl border border-gray-800">
-                <AlertCircle className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">No micro-tasks found matching this filter.</p>
-              </div>
-            )}
+              {microTasks.length === 0 && (
+                <div className="p-8 text-center rounded-xl bg-surface-base border border-surface-border text-surface-muted text-xs">
+                  No micro-tasks generated yet. Process your brain dump on the left to extract actionable chunks.
+                </div>
+              )}
+            </div>
+
+            {/* Quick Add Custom Micro-Task with large touch target */}
+            <button
+              onClick={() => {
+                const title = prompt('Enter quick micro-task title (under 45 mins):');
+                if (title) {
+                  setMicroTasks([
+                    {
+                      id: `mt-${Date.now()}`,
+                      decomposedItemId: 'custom',
+                      title,
+                      durationMinutes: 30,
+                      completed: false,
+                    },
+                    ...microTasks,
+                  ]);
+                }
+              }}
+              className="w-full min-h-[48px] py-3 rounded-xl border border-dashed border-surface-border hover:border-indigo-600/50 hover:bg-indigo-600/5 text-surface-silver font-medium text-xs transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4 text-indigo-400" />
+              Add Custom Daily Micro-Task
+            </button>
           </div>
         </div>
       </div>
-
-      {/* MODAL 1: Add Pareto Action */}
-      {showAddActionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg glass-panel p-6 sm:p-7 rounded-2xl border border-gray-700 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-white mb-1">
-              Define 80/20 High-Leverage Driver
-            </h3>
-            <p className="text-xs text-gray-400 mb-5">
-              Filter out the busywork. Identify the disproportionate 20% lever.
-            </p>
-
-            <form onSubmit={handleAddAction} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Action Title / Strategy
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Host 10 weekly direct sales demonstrations"
-                  value={newActionTitle}
-                  onChange={(e) => setNewActionTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Leverage Tier
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setNewActionTier('vital_20')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      newActionTier === 'vital_20'
-                        ? 'bg-brand-500/10 border-brand-500 text-brand-400'
-                        : 'border-gray-800 text-gray-400'
-                    }`}
-                  >
-                    Vital 20% (High Impact)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewActionTier('maintenance_80')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      newActionTier === 'maintenance_80'
-                        ? 'bg-brand-500/10 border-brand-500 text-brand-400'
-                        : 'border-gray-800 text-gray-400'
-                    }`}
-                  >
-                    Maintenance 80% (Support)
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  80/20 Impact Rationale (Why this moves the needle)
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Explain why this action creates 80% of the forward progress..."
-                  value={newActionWhy}
-                  onChange={(e) => setNewActionWhy(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Weekly Allocated Hours
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={newActionHours}
-                  onChange={(e) => setNewActionHours(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddActionModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-gray-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-black font-bold text-xs"
-                >
-                  Save Leverage Action
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: Add Micro-Task */}
-      {showAddTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg glass-panel p-6 sm:p-7 rounded-2xl border border-gray-700 shadow-2xl relative">
-            <h3 className="text-lg font-bold text-white mb-1">
-              Generate Frictionless Micro-Task
-            </h3>
-            <p className="text-xs text-gray-400 mb-5">
-              Break work down into chunks under 60 minutes to eliminate resistance.
-            </p>
-
-            <form onSubmit={handleAddMicroTask} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Assign to 80/20 Driver
-                </label>
-                <select
-                  value={newTaskParentAction}
-                  onChange={(e) => setNewTaskParentAction(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                >
-                  {paretoActions.map((action) => (
-                    <option key={action.id} value={action.id}>
-                      [{action.leverage_tier === 'vital_20' ? 'VITAL 20%' : '80% ADMIN'}] {action.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Micro-Task Action Item
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Draft 3 cold Loom pitches and send to prospects"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                    Time Chunk
-                  </label>
-                  <select
-                    value={newTaskDuration}
-                    onChange={(e) => setNewTaskDuration(Number(e.target.value) as 15 | 30 | 45 | 60)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                  >
-                    <option value={15}>15 Minutes (Sprint)</option>
-                    <option value={30}>30 Minutes (Focus Block)</option>
-                    <option value={45}>45 Minutes (Deep Chunk)</option>
-                    <option value={60}>60 Minutes (Max Immersion)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                    Energy State
-                  </label>
-                  <select
-                    value={newTaskEnergy}
-                    onChange={(e) => setNewTaskEnergy(e.target.value as EnergyRequirement)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-brand-500 focus:outline-none"
-                  >
-                    <option value="deep_focus">Deep Focus (High Cognitive)</option>
-                    <option value="quick_execution">Quick Execution (Tactical)</option>
-                    <option value="routine">Routine (Low Energy)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddTaskModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-gray-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-black font-bold text-xs shadow-lg shadow-brand-500/20"
-                >
-                  Add Micro-Task to Today's Deck
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
