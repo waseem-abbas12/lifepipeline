@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import MobileBottomNav from '@/components/MobileBottomNav';
@@ -6,6 +6,13 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 export const metadata: Metadata = {
   title: 'LifePipeline — Psychological Execution & Life Blueprint Engine',
   description: 'Eliminate scattered thoughts, define multi-year life blueprints, and lock radical focus with time-locked commitments.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0B0F19',
 };
 
 export default function RootLayout({

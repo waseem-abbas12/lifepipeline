@@ -104,21 +104,21 @@ export default function SelfAnalysisPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowLogModal(true)}
-            className="min-h-[46px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-indigo-600/25 flex items-center gap-2"
+            className="min-h-[46px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Log Today's Metrics
+            <span>Log Today's Metrics</span>
           </button>
 
           <Link
             href="/ai-coach"
-            className="min-h-[46px] px-4 py-2.5 rounded-xl border border-surface-border hover:border-indigo-600/50 bg-surface-elevated text-surface-silver font-semibold text-xs sm:text-sm transition-colors flex items-center gap-2"
+            className="min-h-[46px] px-4 py-2.5 rounded-xl border border-surface-border hover:border-indigo-600/50 bg-surface-elevated active:scale-98 text-surface-silver font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
           >
             <Brain className="w-4 h-4 text-indigo-400" />
-            Switch to AI Coach (Mode 2)
+            <span>Switch to AI Coach</span>
           </Link>
         </div>
       </div>
@@ -224,8 +224,8 @@ export default function SelfAnalysisPage() {
             })}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-surface-muted pt-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-surface-muted pt-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded bg-indigo-600 inline-block" /> Focus Hours
               </span>
@@ -233,7 +233,7 @@ export default function SelfAnalysisPage() {
                 <span className="w-3 h-1.5 rounded bg-emerald-400 inline-block" /> 2+ Vital Completed
               </span>
             </div>
-            <span>Target: &gt; 3.5h Deep Work / Day</span>
+            <span className="text-[11px] sm:text-xs">Target: &gt; 3.5h Deep Work / Day</span>
           </div>
         </div>
 

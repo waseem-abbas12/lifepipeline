@@ -175,14 +175,14 @@ export default function HealthScorePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="w-full sm:w-auto">
           <button
             onClick={handleRunAudit}
             disabled={isAuditing}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-surface-card border border-surface-border hover:border-indigo-600/50 text-surface-silver font-semibold text-xs transition-all flex items-center gap-2 disabled:opacity-50"
+            className="w-full sm:w-auto min-h-[46px] px-4 py-2.5 rounded-xl bg-surface-card border border-surface-border hover:border-indigo-600/50 active:scale-98 text-surface-silver font-semibold text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isAuditing ? 'animate-spin' : ''}`} />
-            {isAuditing ? 'Auditing with Gemini...' : 'Re-Run AI Diagnostic Audit'}
+            <span>{isAuditing ? 'Auditing with Gemini...' : 'Re-Run AI Diagnostic Audit'}</span>
           </button>
         </div>
       </div>

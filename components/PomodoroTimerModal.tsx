@@ -80,7 +80,7 @@ export default function PomodoroTimerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-md clean-card p-6 sm:p-8 rounded-3xl border border-surface-border shadow-2xl relative flex flex-col items-center text-center">
+      <div className="w-full max-w-md clean-card p-5 sm:p-8 rounded-3xl border border-surface-border shadow-2xl relative flex flex-col items-center text-center max-h-[95vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}

@@ -159,20 +159,20 @@ export default function BlueprintDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowGoalModal(true)}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-surface-card border border-surface-border hover:border-indigo-600/60 text-surface-silver font-semibold text-xs tracking-wide transition-all flex items-center gap-2 shadow-sm"
+            className="min-h-[46px] px-4 py-2.5 rounded-xl bg-surface-card border border-surface-border hover:border-indigo-600/60 active:scale-98 text-surface-silver font-semibold text-xs tracking-wide transition-all flex items-center justify-center gap-2 shadow-sm"
           >
             <Plus className="w-4 h-4 text-indigo-400" />
-            Add Horizon Goal
+            <span>Add Horizon Goal</span>
           </button>
           <button
             onClick={() => setShowLockModal(true)}
-            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wide transition-all shadow-lg shadow-indigo-600/25 flex items-center gap-2"
+            className="min-h-[46px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs tracking-wide transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
           >
             <Lock className="w-4 h-4" />
-            {activeTimeLock ? 'Update Time-Lock' : 'Engage 3-6 Mo Time-Lock'}
+            <span>{activeTimeLock ? 'Update Time-Lock' : 'Engage 3-6 Mo Time-Lock'}</span>
           </button>
         </div>
       </div>
