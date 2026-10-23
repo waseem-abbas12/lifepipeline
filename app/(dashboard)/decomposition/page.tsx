@@ -5,287 +5,243 @@ import {
   Sparkles, 
   Target, 
   Lock, 
-  ArrowRight, 
   Check, 
-  Trash2, 
   Clock, 
   Zap, 
   BrainCircuit, 
-  ChevronRight,
-  Filter,
   CheckCircle2,
   Plus,
   RefreshCw,
-  Lightbulb
+  Lightbulb,
+  Cpu,
+  Flame,
+  ArrowUpRight,
+  Info
 } from 'lucide-react';
-import { TimeLockCommitment, BlueprintGoal } from '@/types';
-
-// Structured item parsed from user brain dump
-interface DecomposedItem {
-  id: string;
-  originalText: string;
-  refinedTitle: string;
-  leverageScore: number; // 0 - 100
-  isVital20: boolean;    // true = Vital 20% | false = 80% Noise/Maintenance
-  category: string;
-  estimatedMinutes: number;
-}
-
-interface DailyMicroTask {
-  id: string;
-  decomposedItemId: string;
-  title: string;
-  durationMinutes: 15 | 30 | 45;
-  completed: boolean;
-  scheduledTime?: string;
-}
+import { getActiveUser, updateActiveUser } from '@/lib/storage/userManager';
+import { FamilyUser, DecomposedItem, MicroTask } from '@/types';
+import { ROLE_ARCHETYPES } from '@/lib/constants/roles';
 
 export default function ParetoDecompositionEngine() {
-  // Phase 1 Integration: Active Time-Lock Commitment or 1-Yr Goal Context
-  const [activeTarget, setActiveTarget] = useState({
-    title: 'Scale SaaS Platform to $1.2M ARR with Autonomous Operations',
-    timeframe: 'Active 3-Month Time-Lock Commitment',
-    psychologicalStake: 'Failure means getting stuck trading hours for dollars. Achieving this provides absolute family autonomy.',
-  });
-
-  // State: Scattered Thoughts Input (Brain Dump)
-  const [scatteredInput, setScatteredInput] = useState(
-    'Need to fix onboarding drop-off\nRedo team Slack channels\nRecord 5 personalized cold Loom demos for enterprise leads\nClean up old Notion notes\nShip Stripe automated billing webhook\nReply to routine customer emails\nUpdate social media header graphic\nInterview high-ticket sales closer candidate'
-  );
-
+  const [currentUser, setCurrentUser] = useState<FamilyUser | null>(null);
+  const [scatteredInput, setScatteredInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apiSource, setApiSource] = useState<string | null>(null);
+  const [apiNotice, setApiNotice] = useState<string | null>(null);
 
-  // State: Pareto 20/80 Processed Items
-  const [items, setItems] = useState<DecomposedItem[]>([
-    {
-      id: 'item-1',
-      originalText: 'Record 5 personalized cold Loom demos for enterprise leads',
-      refinedTitle: 'Record 5 Personalized Cold Loom Demos for Enterprise Leads',
-      leverageScore: 94,
-      isVital20: true,
-      category: 'Pipeline & Revenue',
-      estimatedMinutes: 45,
-    },
-    {
-      id: 'item-2',
-      originalText: 'Ship Stripe automated billing webhook',
-      refinedTitle: 'Ship Stripe Automated Billing Webhook & Subscription Listener',
-      leverageScore: 89,
-      isVital20: true,
-      category: 'Infrastructure',
-      estimatedMinutes: 45,
-    },
-    {
-      id: 'item-3',
-      originalText: 'Interview high-ticket sales closer candidate',
-      refinedTitle: 'Interview High-Ticket Sales Closer Candidate',
-      leverageScore: 82,
-      isVital20: true,
-      category: 'Leverage & Team',
-      estimatedMinutes: 30,
-    },
-    {
-      id: 'item-4',
-      originalText: 'Redo team Slack channels',
-      refinedTitle: 'Reorganize internal team Slack channels',
-      leverageScore: 28,
-      isVital20: false,
-      category: 'Routine Admin',
-      estimatedMinutes: 15,
-    },
-    {
-      id: 'item-5',
-      originalText: 'Clean up old Notion notes',
-      refinedTitle: 'Archive outdated workspace Notion pages',
-      leverageScore: 22,
-      isVital20: false,
-      category: 'Routine Admin',
-      estimatedMinutes: 15,
-    },
-    {
-      id: 'item-6',
-      originalText: 'Update social media header graphic',
-      refinedTitle: 'Design and upload new social media banner',
-      leverageScore: 19,
-      isVital20: false,
-      category: 'Low-Impact Cosmetics',
-      estimatedMinutes: 30,
-    },
-  ]);
+  // Sync with active user from local storage
+  const syncWithActiveUser = () => {
+    const user = getActiveUser();
+    setCurrentUser(user);
+    setScatteredInput(user.scatteredThoughts || '');
+  };
 
-  // State: Daily Actionable Micro-Tasks
-  const [microTasks, setMicroTasks] = useState<DailyMicroTask[]>([
-    {
-      id: 'mt-1',
-      decomposedItemId: 'item-1',
-      title: 'Target 5 B2B Founders on LinkedIn and record 90-sec Loom videos',
-      durationMinutes: 45,
-      completed: true,
-    },
-    {
-      id: 'mt-2',
-      decomposedItemId: 'item-1',
-      title: 'Send follow-up Loom links with 1-click booking link',
-      durationMinutes: 15,
-      completed: false,
-    },
-    {
-      id: 'mt-3',
-      decomposedItemId: 'item-2',
-      title: 'Write Stripe webhook handler for checkout.session.completed',
-      durationMinutes: 45,
-      completed: false,
-    },
-    {
-      id: 'mt-4',
-      decomposedItemId: 'item-3',
-      title: 'Conduct 30-min candidate interview & scoring assessment',
-      durationMinutes: 30,
-      completed: false,
-    },
-  ]);
-
-  // Load Time-Lock commitment from localStorage if available (Phase 1 Integration)
   useEffect(() => {
-    try {
-      const savedLock = localStorage.getItem('lifepipeline_active_timelock');
-      if (savedLock) {
-        const parsed = JSON.parse(savedLock);
-        if (parsed.focus_title) {
-          setActiveTarget({
-            title: parsed.focus_title,
-            timeframe: `${parsed.duration_months || 3}-Month Time-Locked Focus`,
-            psychologicalStake: parsed.why_this_matters || activeTarget.psychologicalStake,
-          });
-        }
-      }
-    } catch (e) {
-      // Graceful fallback
-    }
+    syncWithActiveUser();
+    const handleUpdate = () => syncWithActiveUser();
+    window.addEventListener('lifepipeline_state_updated', handleUpdate);
+    return () => window.removeEventListener('lifepipeline_state_updated', handleUpdate);
   }, []);
 
-  // Pareto 80/20 Processing Algorithm
-  const handleProcessBrainDump = () => {
+  if (!currentUser) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-16 text-center text-surface-muted">
+        Loading execution engine...
+      </div>
+    );
+  }
+
+  // Call Gemini Flash API route
+  const handleProcessBrainDump = async () => {
     if (!scatteredInput.trim()) return;
     setIsProcessing(true);
+    setApiNotice(null);
 
-    setTimeout(() => {
-      const lines = scatteredInput
-        .split('\n')
-        .map(l => l.trim())
-        .filter(l => l.length > 0);
-
-      // High leverage keywords indicating 80% outcome drivers
-      const highLeverageRegex = /(sales|revenue|demo|client|contract|customer|stripe|billing|hire|closer|launch|lead|convert|ship|outreach)/i;
-
-      const analyzed: DecomposedItem[] = lines.map((line, idx) => {
-        const isHigh = highLeverageRegex.test(line);
-        const score = isHigh ? Math.floor(75 + Math.random() * 24) : Math.floor(15 + Math.random() * 35);
-        return {
-          id: `item-${Date.now()}-${idx}`,
-          originalText: line,
-          refinedTitle: line.charAt(0).toUpperCase() + line.slice(1),
-          leverageScore: score,
-          isVital20: score >= 70,
-          category: isHigh ? 'High-Leverage Needle' : 'Maintenance / Routine',
-          estimatedMinutes: isHigh ? 45 : 15,
-        };
+    try {
+      const res = await fetch('/api/gemini/decompose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawThoughts: scatteredInput,
+          userProfile: {
+            name: currentUser.name,
+            role: currentUser.role,
+            roleTitle: ROLE_ARCHETYPES[currentUser.role]?.title || currentUser.role,
+          },
+          activeTimeLock: currentUser.activeTimeLock,
+          blueprintGoals: currentUser.blueprintGoals,
+        }),
       });
 
-      analyzed.sort((a, b) => b.leverageScore - a.leverageScore);
-      setItems(analyzed);
+      const data = await res.json();
 
-      // Auto-generate micro-tasks from the Vital 20% items
-      const vitals = analyzed.filter(i => i.isVital20);
-      const generatedTasks: DailyMicroTask[] = vitals.flatMap((v) => [
-        {
-          id: `mt-${Date.now()}-${v.id}-1`,
-          decomposedItemId: v.id,
-          title: `Focus Sprint: ${v.refinedTitle}`,
-          durationMinutes: (v.estimatedMinutes <= 30 ? 30 : 45) as 15 | 30 | 45,
-          completed: false,
-        },
-      ]);
-
-      if (generatedTasks.length > 0) {
-        setMicroTasks(generatedTasks);
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to process thoughts with Gemini');
       }
 
+      setApiSource(data.source);
+      if (data.notice) {
+        setApiNotice(data.notice);
+      }
+
+      // Persist results to active user state
+      updateActiveUser((prev) => ({
+        ...prev,
+        scatteredThoughts: scatteredInput,
+        decomposedItems: data.decomposedItems || [],
+        microTasks: data.microTasks || [],
+        healthReport: data.healthReport ? {
+          ...data.healthReport,
+          id: prev.healthReport.id || data.healthReport.id,
+          user_id: prev.id,
+        } : prev.healthReport,
+      }));
+    } catch (err: any) {
+      console.error('Error invoking Gemini Flash API:', err);
+      alert('Could not complete decomposition: ' + err.message);
+    } finally {
       setIsProcessing(false);
-    }, 400);
+    }
   };
 
-  const toggleTask = (id: string) => {
-    setMicroTasks(prev =>
-      prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-  };
-
-  const toggleItemLeverage = (id: string) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id
+  // Toggle Micro-Task completion with instant reactivity
+  const handleToggleTask = (taskId: string) => {
+    updateActiveUser((prev) => {
+      const updatedTasks = prev.microTasks.map((t) =>
+        t.id === taskId
           ? {
-              ...item,
-              isVital20: !item.isVital20,
-              leverageScore: !item.isVital20 ? 80 : 30,
+              ...t,
+              completed: !t.completed,
+              completed_at: !t.completed ? new Date().toISOString() : null,
             }
-          : item
-      )
-    );
+          : t
+      );
+      return {
+        ...prev,
+        microTasks: updatedTasks,
+      };
+    });
   };
 
-  const addMicroTaskForVital = (vitalItem: DecomposedItem) => {
-    const newTask: DailyMicroTask = {
+  // Toggle Item between Vital 20% and Maintenance 80%
+  const handleToggleItemLeverage = (itemId: string) => {
+    updateActiveUser((prev) => {
+      const updatedItems = prev.decomposedItems.map((item) => {
+        if (item.id === itemId) {
+          const newIsVital = !item.isVital20;
+          return {
+            ...item,
+            isVital20: newIsVital,
+            leverageScore: newIsVital ? 85 : 30,
+            category: newIsVital ? 'Vital 20% Needle-Mover' : 'Maintenance 80%',
+          };
+        }
+        return item;
+      });
+      return {
+        ...prev,
+        decomposedItems: updatedItems,
+      };
+    });
+  };
+
+  // Quick add micro-task for a Vital 20% item
+  const handleAddMicroTaskFromItem = (item: DecomposedItem) => {
+    const newTask: MicroTask = {
       id: `mt-${Date.now()}`,
-      decomposedItemId: vitalItem.id,
-      title: `Sub-task for: ${vitalItem.refinedTitle}`,
-      durationMinutes: 30,
+      user_id: currentUser.id,
+      title: `Sprint: ${item.refinedTitle}`,
+      duration_minutes: 30,
+      energy_state: 'deep_focus',
+      leverage_tier: 'vital_20',
       completed: false,
     };
-    setMicroTasks(prev => [newTask, ...prev]);
+
+    updateActiveUser((prev) => ({
+      ...prev,
+      microTasks: [newTask, ...prev.microTasks],
+    }));
   };
 
-  const vitalItems = items.filter(i => i.isVital20);
-  const maintenanceItems = items.filter(i => !i.isVital20);
-  const completedTasksCount = microTasks.filter(t => t.completed).length;
+  // Add custom micro-task
+  const handleAddCustomTask = () => {
+    const title = prompt('Enter bite-sized micro-task title (must take 15 to 45 mins):');
+    if (!title || !title.trim()) return;
+
+    const newTask: MicroTask = {
+      id: `mt-${Date.now()}`,
+      user_id: currentUser.id,
+      title: title.trim(),
+      duration_minutes: 30,
+      energy_state: 'deep_focus',
+      leverage_tier: 'vital_20',
+      completed: false,
+    };
+
+    updateActiveUser((prev) => ({
+      ...prev,
+      microTasks: [newTask, ...prev.microTasks],
+    }));
+  };
+
+  const vitalItems = (currentUser.decomposedItems || []).filter((i) => i.isVital20);
+  const maintenanceItems = (currentUser.decomposedItems || []).filter((i) => !i.isVital20);
+  const tasks = currentUser.microTasks || [];
+  const completedTasksCount = tasks.filter((t) => t.completed).length;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* 1. Integration Header: Active Blueprint Time-Lock Context */}
+      {/* 1. Integration Header: Active User Blueprint & Time-Lock Context */}
       <div className="clean-card rounded-2xl p-6 sm:p-7 border border-surface-border mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-surface-border">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-lg bg-indigo-600/15 text-indigo-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 border border-indigo-600/30">
                 <Lock className="w-3.5 h-3.5" />
-                Phase 1 Blueprint Integration
+                Active Focus Lock
               </span>
               <span className="text-surface-muted text-xs">•</span>
               <span className="text-xs text-surface-silver font-medium">
-                {activeTarget.timeframe}
+                {currentUser.name} ({ROLE_ARCHETYPES[currentUser.role]?.title || currentUser.role})
+              </span>
+              <span className="text-surface-muted text-xs">•</span>
+              <span className="text-xs text-indigo-400 font-medium">
+                {currentUser.activeTimeLock?.duration_months || 3}-Month Commitment
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-surface-silver tracking-tight">
-              {activeTarget.title}
+              {currentUser.activeTimeLock?.focus_title || 'No Active Time-Lock Commitment'}
             </h1>
           </div>
 
-          <div className="shrink-0">
-            <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-base border border-surface-border text-xs text-surface-muted">
-              <Target className="w-4 h-4 text-indigo-400" />
-              <span>Target Alignment: <strong>Locked</strong></span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-base border border-surface-border text-xs text-surface-silver">
+              <Cpu className="w-4 h-4 text-indigo-400 animate-pulse" />
+              <span>AI Engine: <strong className="text-indigo-400 font-semibold">Gemini Flash</strong></span>
             </span>
           </div>
         </div>
 
-        <p className="text-xs sm:text-sm text-surface-muted italic mt-3">
-          <strong className="text-indigo-400 not-italic font-semibold uppercase tracking-wide text-[11px] mr-1.5">
-            Psychological Stake:
-          </strong>
-          "{activeTarget.psychologicalStake}"
-        </p>
+        {currentUser.activeTimeLock?.why_this_matters && (
+          <p className="text-xs sm:text-sm text-surface-muted italic mt-3">
+            <strong className="text-indigo-400 not-italic font-semibold uppercase tracking-wide text-[11px] mr-1.5">
+              Psychological Stake:
+            </strong>
+            "{currentUser.activeTimeLock.why_this_matters}"
+          </p>
+        )}
       </div>
+
+      {/* Notice Banner if using fallback or live API */}
+      {apiNotice && (
+        <div className="mb-6 p-4 rounded-xl bg-surface-elevated/90 border border-indigo-600/30 flex items-start gap-3 text-xs text-surface-silver">
+          <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-semibold text-indigo-300">Engine Notice: </span>
+            {apiNotice}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* LEFT COLUMN: Scattered Thoughts Brain Dump & Pareto Extraction (7 Cols) */}
@@ -294,31 +250,32 @@ export default function ParetoDecompositionEngine() {
           <div className="clean-card rounded-2xl p-6 border border-surface-border">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <BrainCircuit className="w-5 h-5 text-indigo-500" />
+                <BrainCircuit className="w-5 h-5 text-indigo-400" />
                 <h2 className="text-base font-bold text-surface-silver">
-                  1. Scattered Thoughts & Task Dump
+                  1. Scattered Thoughts & Brain Dump
                 </h2>
               </div>
-              <span className="text-xs text-surface-muted">
-                One thought or task per line
+              <span className="text-xs text-surface-muted font-mono">
+                One thought per line
               </span>
             </div>
 
             <p className="text-xs text-surface-muted mb-3 leading-relaxed">
-              Dump every distraction, overwhelming to-do item, or scattered thought. The Pareto 80/20 algorithm will filter out the noise and isolate the few vital needle-movers.
+              Dump every chaotic thought, overwhelming to-do, or peripheral distraction. 
+              <strong> Google Gemini Flash</strong> will run the Pareto 80/20 filter to isolate the vital levers from routine noise.
             </p>
 
             <textarea
-              rows={6}
+              rows={7}
               value={scatteredInput}
               onChange={(e) => setScatteredInput(e.target.value)}
-              placeholder="e.g. Call lead back&#10;Fix homepage typo&#10;Launch customer outreach&#10;Organize files..."
+              placeholder="e.g. Call high-ticket lead back&#10;Organize desk folders&#10;Fix Stripe subscription webhook&#10;Check social media comments&#10;Draft keynote proposal..."
               className="w-full p-4 rounded-xl bg-surface-base border border-surface-border text-surface-silver text-sm focus:border-indigo-600 focus:outline-none transition-colors resize-none placeholder-surface-muted/60 leading-relaxed font-mono"
             />
 
-            <div className="flex items-center justify-between gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4">
               <span className="text-xs text-surface-muted font-mono">
-                {scatteredInput.split('\n').filter(l => l.trim()).length} raw items entered
+                {scatteredInput.split('\n').filter((l) => l.trim()).length} raw thoughts captured
               </span>
 
               <button
@@ -330,12 +287,12 @@ export default function ParetoDecompositionEngine() {
                 {isProcessing ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Extracting 80/20...
+                    <span>Gemini Flash Reasoning...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
-                    Run 80/20 Pareto Extraction
+                    <Sparkles className="w-4 h-4 text-white" />
+                    <span>Run Gemini 80/20 Pareto Extraction</span>
                   </>
                 )}
               </button>
@@ -347,11 +304,11 @@ export default function ParetoDecompositionEngine() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-surface-silver flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-indigo-500" />
+                  <Zap className="w-5 h-5 text-indigo-400" />
                   2. Pareto 80/20 Filtered Results
                 </h2>
                 <p className="text-xs text-surface-muted mt-0.5">
-                  High-leverage needle movers separated from routine busywork.
+                  The Vital 20% needle-movers separated from the 80% routine noise.
                 </p>
               </div>
 
@@ -368,7 +325,7 @@ export default function ParetoDecompositionEngine() {
             {/* Vital 20% Levers Stack */}
             <div className="space-y-3">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 block">
-                The Vital 20% (Yields 80% of Progress)
+                The Vital 20% (Yields 80% of Real Progress)
               </span>
 
               {vitalItems.map((item) => (
@@ -389,21 +346,26 @@ export default function ParetoDecompositionEngine() {
                       <p className="text-sm font-semibold text-surface-silver">
                         {item.refinedTitle}
                       </p>
+                      {item.impactRationale && (
+                        <p className="text-xs text-surface-muted mt-1.5 italic">
+                          "{item.impactRationale}"
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <button
-                        onClick={() => addMicroTaskForVital(item)}
+                        onClick={() => handleAddMicroTaskFromItem(item)}
                         className="min-h-[40px] px-3 py-1.5 rounded-lg bg-surface-base border border-surface-border hover:border-indigo-500 text-surface-silver text-xs font-medium transition-colors flex items-center gap-1.5"
-                        title="Create micro-task from this driver"
+                        title="Create micro-task from this needle mover"
                       >
                         <Plus className="w-3.5 h-3.5 text-indigo-400" />
                         Micro-Task
                       </button>
                       <button
-                        onClick={() => toggleItemLeverage(item.id)}
+                        onClick={() => handleToggleItemLeverage(item.id)}
                         className="min-h-[40px] px-2.5 py-1.5 rounded-lg bg-surface-base border border-surface-border text-surface-muted hover:text-surface-silver text-xs"
-                        title="Demote to 80% Routine"
+                        title="Demote to Routine 80%"
                       >
                         Demote
                       </button>
@@ -414,7 +376,7 @@ export default function ParetoDecompositionEngine() {
 
               {vitalItems.length === 0 && (
                 <div className="p-6 text-center rounded-xl bg-surface-base border border-surface-border text-surface-muted text-xs">
-                  No 20% high-leverage actions identified yet. Run extraction above.
+                  No 20% high-leverage actions identified yet. Run Gemini extraction above.
                 </div>
               )}
             </div>
@@ -422,7 +384,7 @@ export default function ParetoDecompositionEngine() {
             {/* Routine 80% Noise Stack */}
             <div className="space-y-2 pt-2 border-t border-surface-border">
               <span className="text-xs font-bold uppercase tracking-wider text-surface-muted block">
-                The 80% Maintenance & Noise (Defer or Delegate)
+                The 80% Maintenance & Routine Noise (Batch or Defer)
               </span>
 
               <div className="space-y-1.5">
@@ -437,7 +399,7 @@ export default function ParetoDecompositionEngine() {
                     </div>
 
                     <button
-                      onClick={() => toggleItemLeverage(item.id)}
+                      onClick={() => handleToggleItemLeverage(item.id)}
                       className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium shrink-0 px-2 py-1 rounded bg-indigo-600/10 hover:bg-indigo-600/20 transition-colors"
                     >
                       Promote to 20%
@@ -455,17 +417,17 @@ export default function ParetoDecompositionEngine() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-surface-silver flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-indigo-500" />
+                  <CheckCircle2 className="w-5 h-5 text-indigo-400" />
                   3. Daily Micro-Task Deck
                 </h2>
                 <p className="text-xs text-surface-muted mt-0.5">
-                  Friction-free, bite-sized tasks under 45 minutes.
+                  Zero initiation friction. Strict 15-45 minute sprints.
                 </p>
               </div>
 
               <div className="text-right">
                 <span className="text-base font-extrabold text-indigo-400">
-                  {completedTasksCount}/{microTasks.length}
+                  {completedTasksCount}/{tasks.length}
                 </span>
                 <span className="block text-[10px] text-surface-muted uppercase font-semibold">
                   Done Today
@@ -478,18 +440,18 @@ export default function ParetoDecompositionEngine() {
               <div
                 className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
                 style={{
-                  width: `${microTasks.length > 0 ? (completedTasksCount / microTasks.length) * 100 : 0}%`,
+                  width: `${tasks.length > 0 ? (completedTasksCount / tasks.length) * 100 : 0}%`,
                 }}
               />
             </div>
 
-            {/* Micro-Task List with Large Touch Targets (min-h-[56px]) */}
+            {/* Micro-Task List with Big Touch Targets (min-h-[56px]) */}
             <div className="space-y-3">
-              {microTasks.map((task) => (
+              {tasks.map((task) => (
                 <button
                   key={task.id}
                   type="button"
-                  onClick={() => toggleTask(task.id)}
+                  onClick={() => handleToggleTask(task.id)}
                   className={`w-full text-left min-h-[56px] p-4 rounded-xl border transition-all flex items-start gap-3.5 group clean-card-hover ${
                     task.completed
                       ? 'bg-surface-base/60 border-surface-border/50 opacity-60'
@@ -520,40 +482,26 @@ export default function ParetoDecompositionEngine() {
                     <div className="flex items-center gap-2 mt-2">
                       <span className="inline-flex items-center gap-1 text-[11px] font-mono text-surface-muted px-2 py-0.5 rounded bg-surface-base border border-surface-border">
                         <Clock className="w-3 h-3 text-indigo-400" />
-                        {task.durationMinutes} min sprint
+                        {task.duration_minutes} min sprint
                       </span>
-                      <span className="text-[11px] text-indigo-400 font-semibold">
-                        Vital 20%
+                      <span className="text-[11px] text-indigo-400 font-semibold uppercase">
+                        {task.energy_state.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
                 </button>
               ))}
 
-              {microTasks.length === 0 && (
+              {tasks.length === 0 && (
                 <div className="p-8 text-center rounded-xl bg-surface-base border border-surface-border text-surface-muted text-xs">
-                  No micro-tasks generated yet. Process your brain dump on the left to extract actionable chunks.
+                  No micro-tasks generated yet. Run Gemini 80/20 extraction on the left.
                 </div>
               )}
             </div>
 
-            {/* Quick Add Custom Micro-Task with large touch target */}
+            {/* Add Custom Micro-Task button with min-h-[48px] */}
             <button
-              onClick={() => {
-                const title = prompt('Enter quick micro-task title (under 45 mins):');
-                if (title) {
-                  setMicroTasks([
-                    {
-                      id: `mt-${Date.now()}`,
-                      decomposedItemId: 'custom',
-                      title,
-                      durationMinutes: 30,
-                      completed: false,
-                    },
-                    ...microTasks,
-                  ]);
-                }
-              }}
+              onClick={handleAddCustomTask}
               className="w-full min-h-[48px] py-3 rounded-xl border border-dashed border-surface-border hover:border-indigo-600/50 hover:bg-indigo-600/5 text-surface-silver font-medium text-xs transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4 text-indigo-400" />
@@ -565,3 +513,4 @@ export default function ParetoDecompositionEngine() {
     </div>
   );
 }
+

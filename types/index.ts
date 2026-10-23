@@ -54,6 +54,17 @@ export type LeverageTier = 'vital_20' | 'maintenance_80';
 export type EnergyRequirement = 'deep_focus' | 'quick_execution' | 'routine';
 export type TaskPriority = 'critical' | 'high' | 'normal';
 
+export interface DecomposedItem {
+  id: string;
+  originalText: string;
+  refinedTitle: string;
+  leverageScore: number; // 0 - 100
+  isVital20: boolean;    // true = Vital 20% | false = 80% Routine/Maintenance
+  category: string;
+  estimatedMinutes: number;
+  impactRationale?: string;
+}
+
 export interface ParetoLeverageAction {
   id: string;
   user_id: string;
@@ -69,13 +80,13 @@ export interface ParetoLeverageAction {
 export interface MicroTask {
   id: string;
   user_id: string;
-  pareto_action_id: string;
+  pareto_action_id?: string;
   title: string;
   duration_minutes: 15 | 30 | 45 | 60;
   energy_state: EnergyRequirement;
   leverage_tier: LeverageTier;
   completed: boolean;
-  scheduled_date: string;
+  scheduled_date?: string;
   completed_at?: string | null;
 }
 
@@ -92,6 +103,7 @@ export interface GapDiagnosis {
   title: string;
   description: string;
   prescribed_action: string;
+  resolved?: boolean;
 }
 
 export interface HealthScoreReport {
@@ -102,6 +114,7 @@ export interface HealthScoreReport {
   execution_velocity_pct: number;
   pareto_discipline_pct: number;
   time_lock_pace_pct: number;
+  summary?: string;
   diagnoses: GapDiagnosis[];
   evaluated_at: string;
 }
@@ -119,4 +132,54 @@ export interface RoleArchetypeConfig {
     fiveYear: string;
   };
 }
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'coach';
+  message: string;
+  timestamp: string;
+}
+
+export interface DailyExecutionMetric {
+  id: string;
+  date: string;
+  focusHours: number;
+  vitalTasksCompleted: number;
+  maintenanceTasksCompleted: number;
+  energyRating: number; // 1 - 10
+  selfDisciplineRating: number; // 1 - 10
+  dayReflection?: string;
+}
+
+export interface TopWeakness {
+  id: string;
+  title: string;
+  category: 'execution_friction' | 'prioritization_drift' | 'energy_leak' | 'clarity_deficit';
+  impactSeverity: 'critical' | 'moderate';
+  whyFallingBehind: string;
+  psychologicalRemedy: string;
+}
+
+// ==========================================
+// Family Beta Multi-User Model (4 Users + SaaS Auth)
+// ==========================================
+
+export interface FamilyUser {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  avatar: string;
+  role: UserRole;
+  blueprintGoals: BlueprintGoal[];
+  activeTimeLock: TimeLockCommitment | null;
+  scatteredThoughts: string;
+  decomposedItems: DecomposedItem[];
+  microTasks: MicroTask[];
+  healthReport: HealthScoreReport;
+  chatHistory?: ChatMessage[];
+  dailyMetrics?: DailyExecutionMetric[];
+  topWeaknesses?: TopWeakness[];
+}
+
 

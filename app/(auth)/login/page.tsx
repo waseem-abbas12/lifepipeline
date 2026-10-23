@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Compass, Mail, Lock, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Compass, Mail, Lock, ArrowRight, ShieldCheck, AlertCircle, Users, CheckCircle2 } from 'lucide-react';
+import { loginUser, getAllUsers, setActiveUserId } from '@/lib/storage/userManager';
+import { FamilyUser } from '@/types';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,95 +14,113 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const users = getAllUsers();
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    // If Supabase credentials are configured, execute live auth
-    if (supabaseUrl && supabaseUrl.includes('supabase.co')) {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setErrorMsg(error.message);
-        setLoading(false);
-        return;
-      }
-    } else {
-      // Local fallback simulation for rapid testing
-      localStorage.setItem('lifepipeline_user', JSON.stringify({ email, authenticated: true }));
+    const res = loginUser(email, password);
+    if (!res.success) {
+      setErrorMsg(res.error || 'Failed to authenticate');
+      setLoading(false);
+      return;
     }
 
     setLoading(false);
-    router.push('/role-selection');
+    router.push('/self-analysis');
   };
 
-  const handleDemoLogin = () => {
-    localStorage.setItem('lifepipeline_user', JSON.stringify({ 
-      email: 'founder@lifepipeline.io', 
-      authenticated: true,
-      demoMode: true 
-    }));
-    router.push('/role-selection');
+  const handleQuickLoginAs = (user: FamilyUser) => {
+    setEmail(user.email);
+    setPassword(user.password || '123456');
+    const res = loginUser(user.email, user.password || '123456');
+    if (res.success) {
+      router.push('/self-analysis');
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-      <div className="w-full max-w-md glass-panel p-8 rounded-2xl border border-gray-800 shadow-2xl relative">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mx-auto mb-3">
-            <Compass className="w-6 h-6 text-brand-500" />
+      <div className="w-full max-w-md clean-card p-6 sm:p-8 rounded-2xl border border-surface-border shadow-2xl relative">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-indigo-600/15 border border-indigo-600/30 flex items-center justify-center mx-auto mb-3 shadow-md shadow-indigo-600/20">
+            <Compass className="w-6 h-6 text-indigo-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Access LifePipeline</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            Sign in to access your life blueprint and time-locks
+          <h2 className="text-2xl font-black text-surface-silver tracking-tight">Access LifePipeline</h2>
+          <p className="text-xs sm:text-sm text-surface-muted mt-1">
+            Sign in to your private SaaS execution and AI coaching environment
           </p>
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
+        {/* 1-Click Family Member Quick Login Deck */}
+        <div className="mb-6 p-3.5 rounded-xl bg-surface-elevated/60 border border-surface-border">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-surface-muted flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
+              1-Click Family Member Login
+            </span>
+            <span className="text-[10px] text-surface-muted font-mono">pwd: 123456</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {users.slice(0, 4).map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => handleQuickLoginAs(u)}
+                className="min-h-[46px] px-2.5 py-2 rounded-lg bg-surface-card hover:bg-indigo-600/10 hover:border-indigo-600/40 border border-surface-border text-left transition-all flex items-center gap-2 group"
+              >
+                <div className="w-7 h-7 rounded-md bg-indigo-600/20 text-indigo-400 font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  {u.avatar}
+                </div>
+                <div className="truncate">
+                  <div className="text-xs font-semibold text-surface-silver truncate">{u.name.split(' ')[0]}</div>
+                  <div className="text-[9px] text-surface-muted capitalize truncate">{u.role.replace('_', ' ')}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-surface-muted mb-1.5">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-surface-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@domain.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-700 focus:border-brand-500 focus:outline-none text-white text-sm placeholder-gray-500 transition-colors"
+                placeholder="name@lifepipeline.internal"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-base border border-surface-border focus:border-indigo-600 focus:outline-none text-surface-silver text-sm placeholder-surface-muted transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-              Master Password
+            <label className="block text-xs font-semibold uppercase tracking-wider text-surface-muted mb-1.5">
+              Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-surface-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-900/80 border border-gray-700 focus:border-brand-500 focus:outline-none text-white text-sm placeholder-gray-500 transition-colors"
+                placeholder="••••••••"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-base border border-surface-border focus:border-indigo-600 focus:outline-none text-surface-silver text-sm placeholder-surface-muted transition-colors"
               />
             </div>
           </div>
@@ -109,35 +128,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-black font-bold text-sm tracking-wide transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm tracking-wide transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In To Your Profile'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="relative my-6 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-800"></div>
-          </div>
-          <span className="relative px-3 bg-surface-card text-xs text-gray-500 uppercase tracking-widest font-semibold">
-            Or Quick Explore
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          className="w-full py-2.5 px-4 rounded-xl border border-gray-700 hover:border-gray-500 text-gray-300 font-medium text-xs transition-colors flex items-center justify-center gap-2 bg-gray-800/40"
-        >
-          <ShieldCheck className="w-4 h-4 text-brand-400" />
-          Continue with 1-Click Sandbox Mode
-        </button>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Don't have an account yet?{' '}
-          <Link href="/signup" className="text-brand-500 hover:text-brand-400 font-semibold underline underline-offset-4">
-            Create an Account
+        <p className="text-center text-xs text-surface-muted mt-6">
+          Need a separate family profile?{' '}
+          <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4">
+            Create Profile
           </Link>
         </p>
       </div>

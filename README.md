@@ -1,52 +1,81 @@
-# LifePipeline — Phase 1: Foundation, User Auth & Life Blueprint Onboarding
+# LifePipeline — Complete MVP (Family Beta & Gemini Flash 80/20 Engine)
 
-LifePipeline is a psychological execution, time management, and life blueprint engine built with Next.js 14, Tailwind CSS, TypeScript, and Supabase.
-
----
-
-## 🏗️ Phase 1 Architecture Overview
-
-1. **Multi-User Authentication**:
-   - Clean email/password sign-up and sign-in pages (`/login` & `/signup`).
-   - Integrated Supabase SSR authentication client + sandbox/demo bypass for instant testing.
-2. **Dynamic Role Selection Onboarding (`/role-selection`)**:
-   - Psychological identity archetypes tailored for:
-     - 🎓 **Student & Emerging Scholar** (GPA, skill acquisition, internships)
-     - 📈 **Business Owner & Founder** (Revenue, capital efficiency, systems)
-     - 💼 **Independent Freelancer** (High-ticket retainers, inbound authority)
-     - 🏆 **Corporate Professional** (Executive presence, promotion velocity)
-     - 🤝 **Homemaker & Family Anchor** (Family health, personal micro-enterprise, peace)
-   - Dynamic 80/20 leverage areas & sample horizon goals tailored per role.
-3. **Life Blueprint & Time-Lock Engine (`/blueprint`)**:
-   - Multi-horizon quadrant engine: **1-Year (Execution)**, **3-Year (Scaling)**, and **5-Year (Sovereignty)**.
-   - **Time-Lock Protocol**: Allows users to lock a single priority for **3 or 6 months** with psychological stakes ("Why failure is unacceptable") and a real-time countdown clock.
+LifePipeline is a psychological execution and time management SaaS built with Next.js 14, TypeScript, Tailwind CSS, and powered by the **Google Gemini Flash API**.
 
 ---
 
-## 🚀 Getting Started
+## ⚡ Core MVP Architecture
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+### 1. 👨‍👩‍👧‍👧 Multi-User Family Beta Engine (4 Profiles)
+- Pre-configured profiles ready for instant testing:
+  - **Waseem (Founder)**: Business Owner & Founder archetype
+  - **Ayesha (Sister 1)**: Student & Emerging Scholar archetype
+  - **Fatima (Sister 2)**: Corporate Professional & Executive archetype
+  - **Maryam (Sister 3)**: Independent Freelancer & Consultant archetype
+- **Instant Switcher**: 1-click switcher in the navbar and on the homepage.
+- **Isolated Persistence**: Blueprints, Time-Locks, Brain Dumps, Micro-Tasks, and Traffic Light Health Scores are saved per user in browser local storage (`lifepipeline_beta_state_v1`). Data is never lost on refresh.
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env.local`:
+### 2. 🧠 Google Gemini Flash AI Brain
+- Route: `/api/gemini/decompose`
+- Instructed with an elite psychological execution coach system prompt applying the Pareto 80/20 principle.
+- Takes chaotic brain dumps + active time-locks and outputs:
+  - **The Vital 20%**: Needle-movers with leverage scores (70-100) and psychological impact rationales.
+  - **The Routine 80%**: Maintenance and noise to defer or batch.
+  - **Daily Micro-Tasks**: Bite-sized sprints (15, 30, 45 mins) designed for zero initiation friction.
+  - **Traffic Light Diagnostic Assessment**: Dynamic health score and gap analysis.
+- Includes a smart offline/heuristic fallback so the app works seamlessly even before adding your Gemini API key.
+
+### 3. 🚦 Traffic Light Health System
+- Green (`#10B981`): Optimal Momentum (high Vital 20% execution)
+- Yellow (`#F59E0B`): Friction Warning (vulnerable to routine busywork)
+- Red (`#EF4444`): Critical Drift (stalled trajectory)
+- 1-Click Psychological Remedies: Apply remedies directly to resolve bottlenecks and instantly boost composite score.
+
+### 4. 🎨 Design Philosophy
+- Base: Deep Midnight Charcoal (`#0B0F19`)
+- Primary Accent: Electric Indigo (`#4F46E5`, hover `#6366F1`)
+- Secondary: Soft Silver Gray (`#F3F4F6`, muted `#9CA3AF`)
+- Big touch targets (min 44px - 56px) for mobile and desktop ergonomics.
+
+---
+
+## 🔑 Environment Configuration
+
+### 1. Local Development (`.env.local`)
+Create a `.env.local` file (or copy `.env.example`):
 ```bash
 cp .env.example .env.local
 ```
-Fill in your Supabase project URL and anon key (or run in Demo Mode right out of the box).
 
-### 3. Database Schema Setup (Supabase)
-Run the SQL script located in `supabase/schema.sql` inside your Supabase SQL Editor. It sets up:
-- Custom Enums (`user_role`, `blueprint_timeframe`, `lock_status`)
-- `profiles` table with auto-creation trigger on user signup
-- `blueprints` table (1, 3, 5-Year horizons)
-- `time_locks` table (3 and 6-month commitments)
-- Row Level Security (RLS) policies protecting tenant isolation
+Add your Google Gemini API key:
+```env
+# Google Gemini Flash API Key
+GEMINI_API_KEY=AIzaSy...your_gemini_api_key_here
 
-### 4. Run Development Server
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3005
+```
+
+> **Where to get a key?** Visit [Google AI Studio](https://aistudio.google.com/) to obtain a free Gemini Flash API key.
+
+### 2. Deploying to Vercel
+1. Push this repository to GitHub.
+2. In your [Vercel Dashboard](https://vercel.com/), click **Add New Project** and import `lifepipeline`.
+3. In **Settings -> Environment Variables**, add:
+   - `GEMINI_API_KEY`: Your Google Gemini API Key.
+4. Click **Deploy**. LifePipeline will deploy with serverless Edge/Node routes enabled.
+
+---
+
+## 🏃‍♂️ Running Locally
+
 ```bash
+# Install dependencies
+npm install
+
+# Start local server on port 3005
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) to view LifePipeline.
+
+Visit [http://localhost:3005](http://localhost:3005) to experience the LifePipeline MVP.
+
