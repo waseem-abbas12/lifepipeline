@@ -75,6 +75,18 @@ export default function Navbar() {
             <Lock className="w-4 h-4 shrink-0 text-indigo-400" />
             <span>Blueprint</span>
           </Link>
+
+          <Link
+            href="/pricing"
+            className={`min-h-[44px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+              pathname === '/pricing'
+                ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-600/40'
+                : 'text-surface-muted hover:text-surface-silver hover:bg-surface-elevated'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 shrink-0 text-amber-400" />
+            <span className="text-amber-300 font-bold">Pricing</span>
+          </Link>
         </nav>
 
         {/* Multi-User Family Beta Switcher */}

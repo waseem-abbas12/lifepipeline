@@ -16,11 +16,14 @@ import {
   Cpu,
   Flame,
   ArrowUpRight,
-  Info
+  Info,
+  Play
 } from 'lucide-react';
 import { getActiveUser, updateActiveUser } from '@/lib/storage/userManager';
 import { FamilyUser, DecomposedItem, MicroTask } from '@/types';
 import { ROLE_ARCHETYPES } from '@/lib/constants/roles';
+import PomodoroTimerModal from '@/components/PomodoroTimerModal';
+import { sounds } from '@/lib/audio/soundEngine';
 
 export default function ParetoDecompositionEngine() {
   const [currentUser, setCurrentUser] = useState<FamilyUser | null>(null);
@@ -28,6 +31,7 @@ export default function ParetoDecompositionEngine() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiSource, setApiSource] = useState<string | null>(null);
   const [apiNotice, setApiNotice] = useState<string | null>(null);
+  const [activeTimerTask, setActiveTimerTask] = useState<{ title: string; minutes: number } | null>(null);
 
   // Sync with active user from local storage
   const syncWithActiveUser = () => {
@@ -107,15 +111,23 @@ export default function ParetoDecompositionEngine() {
   // Toggle Micro-Task completion with instant reactivity
   const handleToggleTask = (taskId: string) => {
     updateActiveUser((prev) => {
-      const updatedTasks = prev.microTasks.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              completed: !t.completed,
-              completed_at: !t.completed ? new Date().toISOString() : null,
-            }
-          : t
-      );
+      let nowCompleted = false;
+      const updatedTasks = prev.microTasks.map((t) => {
+        if (t.id === taskId) {
+          nowCompleted = !t.completed;
+          return {
+            ...t,
+            completed: nowCompleted,
+            completed_at: nowCompleted ? new Date().toISOString() : null,
+          };
+        }
+        return t;
+      });
+
+      if (nowCompleted) {
+        sounds.playTaskComplete();
+      }
+
       return {
         ...prev,
         microTasks: updatedTasks,
@@ -448,17 +460,17 @@ export default function ParetoDecompositionEngine() {
             {/* Micro-Task List with Big Touch Targets (min-h-[56px]) */}
             <div className="space-y-3">
               {tasks.map((task) => (
-                <button
+                <div
                   key={task.id}
-                  type="button"
-                  onClick={() => handleToggleTask(task.id)}
-                  className={`w-full text-left min-h-[56px] p-4 rounded-xl border transition-all flex items-start gap-3.5 group clean-card-hover ${
+                  className={`w-full min-h-[56px] p-4 rounded-xl border transition-all flex items-start gap-3.5 group ${
                     task.completed
                       ? 'bg-surface-base/60 border-surface-border/50 opacity-60'
                       : 'clean-card border-surface-border hover:border-indigo-600/60'
                   }`}
                 >
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => handleToggleTask(task.id)}
                     className={`w-6 h-6 rounded-lg mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
                       task.completed
                         ? 'bg-indigo-600 text-white'
@@ -466,9 +478,9 @@ export default function ParetoDecompositionEngine() {
                     }`}
                   >
                     {task.completed && <Check className="w-4 h-4 stroke-[3]" />}
-                  </div>
+                  </button>
 
-                  <div className="flex-1">
+                  <div className="flex-1 cursor-pointer" onClick={() => handleToggleTask(task.id)}>
                     <p
                       className={`text-sm font-medium leading-snug ${
                         task.completed
@@ -489,7 +501,19 @@ export default function ParetoDecompositionEngine() {
                       </span>
                     </div>
                   </div>
-                </button>
+
+                  {!task.completed && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTimerTask({ title: task.title, minutes: task.duration_minutes })}
+                      className="p-2 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-600/30 text-indigo-400 hover:text-white transition-all shrink-0 flex items-center gap-1 text-xs font-semibold"
+                      title="Launch Pomodoro Focus Silo"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span className="hidden sm:inline">Focus</span>
+                    </button>
+                  )}
+                </div>
               ))}
 
               {tasks.length === 0 && (
@@ -510,6 +534,22 @@ export default function ParetoDecompositionEngine() {
           </div>
         </div>
       </div>
+
+      {/* Pomodoro Timer Modal */}
+      {activeTimerTask && (
+        <PomodoroTimerModal
+          isOpen={true}
+          taskTitle={activeTimerTask.title}
+          defaultMinutes={activeTimerTask.minutes}
+          onClose={() => setActiveTimerTask(null)}
+          onTaskComplete={() => {
+            const match = tasks.find(t => t.title === activeTimerTask.title);
+            if (match && !match.completed) {
+              handleToggleTask(match.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
